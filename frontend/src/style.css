@@ -756,3 +756,41 @@ body {
   color: var(--text-muted);
   font-family: monospace;
 }
+
+/* Glassmorphic Dropdown Selector for Language */
+.lang-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lang-select {
+  background: var(--btn-secondary);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+}
+
+.lang-select:hover {
+  background: var(--btn-secondary-hover);
+  border-color: var(--card-border-hover);
+}
+
+.lang-selector::after {
+  content: "▾";
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+

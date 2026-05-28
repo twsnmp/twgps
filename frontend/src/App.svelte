@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import Globe from './components/Globe.svelte';
+  import { i18n } from './i18n.svelte.js';
   import { GetGPSState, ForceGPSScan, GetNTPServerStats, ToggleNTPServer } from '../wailsjs/go/main/App.js';
   import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock } from '@lucide/svelte';
 
@@ -177,9 +178,15 @@
     <div class="nav-controls">
       <div class="status-indicator {gpsState.hasFix ? 'active' : 'searching'}">
         <span class="pulse-dot"></span>
-        {gpsState.hasFix ? 'GPS Llocked' : gpsState.scanning ? 'Scanning Ports...' : 'Searching Satellites...'}
+        {gpsState.hasFix ? i18n.t('status.locked') : gpsState.scanning ? i18n.t('status.scanning') : i18n.t('status.searching')}
       </div>
-      <button class="icon-btn theme-toggle" onclick={toggleTheme} title="Toggle Theme">
+      <div class="lang-selector">
+        <select class="lang-select" value={i18n.currentLocale} onchange={(e) => i18n.setLocale(e.target.value)} title={i18n.t('nav.lang')}>
+          <option value="en">EN</option>
+          <option value="ja">JA</option>
+        </select>
+      </div>
+      <button class="icon-btn theme-toggle" onclick={toggleTheme} title={i18n.t('nav.theme')}>
         {#if isDarkMode}
           <Sun size={20} color="#00d9ff" />
         {:else}
@@ -194,26 +201,26 @@
     <aside class="sidebar-left card">
       <div class="card-header">
         <Compass class="card-icon cyan" />
-        <h2>Position Matrix</h2>
+        <h2>{i18n.t('panels.position')}</h2>
       </div>
       <div class="coord-matrix">
         <div class="coord-row">
           <div class="coord-val">
-            <span class="label">Latitude</span>
+            <span class="label">{i18n.t('pos.latitude')}</span>
             <span class="value">{gpsState.hasFix ? gpsState.latitude.toFixed(6) + '°' : '---.------'}</span>
           </div>
           <div class="coord-val">
-            <span class="label">Longitude</span>
+            <span class="label">{i18n.t('pos.longitude')}</span>
             <span class="value">{gpsState.hasFix ? gpsState.longitude.toFixed(6) + '°' : '---.------'}</span>
           </div>
         </div>
         <div class="coord-row mt-4">
           <div class="coord-val">
-            <span class="label">Altitude (MSL)</span>
+            <span class="label">{i18n.t('pos.altitude')}</span>
             <span class="value">{gpsState.hasFix ? gpsState.altitude.toFixed(1) + ' m' : '----.- m'}</span>
           </div>
           <div class="coord-val">
-            <span class="label">Speed</span>
+            <span class="label">{i18n.t('pos.speed')}</span>
             <span class="value">{gpsState.hasFix ? gpsState.speedKmh.toFixed(1) + ' km/h' : '--.- km/h'}</span>
           </div>
         </div>
@@ -224,18 +231,18 @@
       <!-- Time Matrix Panel -->
       <div class="card-header">
         <Clock class="card-icon cyan" />
-        <h2>Time Matrix</h2>
+        <h2>{i18n.t('panels.time')}</h2>
       </div>
       <div class="coord-matrix">
         <div class="coord-row">
           <div class="coord-val">
-            <span class="label">Local Time</span>
+            <span class="label">{i18n.t('time.local')}</span>
             <span class="value">{timeLocal}</span>
           </div>
         </div>
         <div class="coord-row mt-4">
           <div class="coord-val">
-            <span class="label">UTC Time</span>
+            <span class="label">{i18n.t('time.utc')}</span>
             <span class="value">{timeUTC}</span>
           </div>
         </div>
@@ -246,16 +253,16 @@
       <!-- NTP Control Panel -->
       <div class="card-header">
         <Clock class="card-icon emerald" />
-        <h2>NTP Server</h2>
+        <h2>{i18n.t('panels.ntp')}</h2>
       </div>
       <div class="ntp-panel">
         <div class="ntp-status-box {ntpStats.running ? 'running' : 'stopped'}">
-          <div class="status-label">Server Status</div>
-          <div class="status-text">{ntpStats.running ? 'ONLINE' : 'OFFLINE'}</div>
+          <div class="status-label">{i18n.t('ntp.status')}</div>
+          <div class="status-text">{ntpStats.running ? i18n.t('ntp.online') : i18n.t('ntp.offline')}</div>
         </div>
         
         <div class="form-row">
-          <label for="ntp-port">Server Port</label>
+          <label for="ntp-port">{i18n.t('ntp.port')}</label>
           <input 
             type="number" 
             id="ntp-port" 
@@ -268,11 +275,11 @@
 
         <div class="stats-row">
           <div class="stat-unit">
-            <span class="stat-label">Clients Connected</span>
+            <span class="stat-label">{i18n.t('ntp.clients')}</span>
             <span class="stat-value">{ntpStats.clientCount}</span>
           </div>
           <div class="stat-unit">
-            <span class="stat-label">Reference ID</span>
+            <span class="stat-label">{i18n.t('ntp.refId')}</span>
             <span class="stat-value">GPS</span>
           </div>
         </div>
@@ -282,9 +289,9 @@
           onclick={handleToggleNTP}
         >
           {#if ntpStats.running}
-            <Square size={16} /> Stop Time Server
+            <Square size={16} /> {i18n.t('ntp.stop')}
           {:else}
-            <Play size={16} /> Start Time Server
+            <Play size={16} /> {i18n.t('ntp.start')}
           {/if}
         </button>
       </div>
@@ -294,11 +301,11 @@
       <!-- GPS Connection Panel -->
       <div class="card-header">
         <Cpu class="card-icon amber" />
-        <h2>Receiver Interface</h2>
+        <h2>{i18n.t('panels.receiver')}</h2>
       </div>
       <div class="receiver-panel">
         <div class="field-info">
-          <span class="label">Active Port</span>
+          <span class="label">{i18n.t('rcv.active')}</span>
           <span class="value active-port">{gpsState.activePort || 'None'}</span>
         </div>
         <button 
@@ -307,7 +314,7 @@
           disabled={gpsState.scanning}
         >
           <RefreshCw size={16} class={gpsState.scanning ? 'spin' : ''} />
-          {gpsState.scanning ? 'Scanning...' : 'Rescan Ports'}
+          {gpsState.scanning ? i18n.t('rcv.scanning') : i18n.t('rcv.rescan')}
         </button>
       </div>
     </aside>
@@ -321,14 +328,14 @@
       <section class="satellites-section card">
         <div class="card-header">
           <Radio class="card-icon pink" />
-          <h2>Satellite Matrix ({gpsState.numSatellites}/{totalSatsInView})</h2>
+          <h2>{i18n.t('panels.satellites')} ({gpsState.numSatellites}/{totalSatsInView})</h2>
         </div>
 
         <div class="satellites-rows-container">
           {#if Object.keys(gpsState.satellites || {}).length === 0}
             <div class="empty-state">
               <span class="pulse-dot large"></span>
-              <p>Searching for GPS receiver or satellite signals...</p>
+              <p>{i18n.t('sat.empty')}</p>
             </div>
           {:else}
             {#each Object.entries(gpsState.satellites) as [system, sats]}
@@ -336,14 +343,14 @@
                 <div class="constellation-row">
                   <h3>
                     <span class="indicator" style="background-color: {systemColors[system] || '#fff'}"></span>
-                    {system} ({Object.keys(sats).length})
+                    {i18n.t('systems.' + system)} ({Object.keys(sats).length})
                   </h3>
                   <div class="sat-horizontal-list">
                     {#each Object.values(sats) as sat}
                       <div class="sat-card {sat.snr > 0 ? 'active' : 'inactive'}">
                         <div class="sat-header">
                           <span class="prn">No.{sat.prn}</span>
-                          <span class="snr-val">{sat.snr > 0 ? sat.snr + ' dB' : 'No Sig'}</span>
+                          <span class="snr-val">{sat.snr > 0 ? sat.snr + ' dB' : i18n.t('sat.noSig')}</span>
                         </div>
                         <div class="snr-bar-bg">
                           <div class="snr-bar-fg" style="width: {Math.min(100, (sat.snr / 50) * 100)}%; background-color: {systemColors[system] || '#fff'}"></div>
