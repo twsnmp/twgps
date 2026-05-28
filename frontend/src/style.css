@@ -271,10 +271,116 @@ body {
 
 /* Left & Right Panels sizing */
 .sidebar-left {
-  width: 300px;
+  width: 290px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  padding: 12px;
+  gap: 0px;
+}
+
+.sidebar-left .card-header {
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.sidebar-left .card-header h2 {
+  font-size: 13px;
+}
+
+.sidebar-left .card-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-left .separator {
+  margin: 10px 0;
+}
+
+.sidebar-left .coord-matrix {
+  gap: 6px;
+}
+
+.sidebar-left .coord-row {
+  gap: 6px;
+}
+
+.sidebar-left .coord-row.mt-4 {
+  margin-top: 0px;
+}
+
+.sidebar-left .coord-val {
+  padding: 6px 8px;
+  gap: 2px;
+}
+
+.sidebar-left .coord-val .label {
+  font-size: 10px;
+}
+
+.sidebar-left .coord-val .value {
+  font-size: 13px;
+}
+
+.sidebar-left .ntp-panel {
+  gap: 8px;
+}
+
+.sidebar-left .ntp-status-box {
+  padding: 6px;
+  font-size: 12px;
+}
+
+.sidebar-left .form-row {
+  gap: 4px;
+}
+
+.sidebar-left .form-row label {
+  font-size: 11px;
+}
+
+.sidebar-left .form-row input {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.sidebar-left .stats-row {
+  gap: 8px;
+}
+
+.sidebar-left .stat-unit {
+  padding: 4px 6px;
+}
+
+.sidebar-left .stat-label {
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+
+.sidebar-left .stat-value {
+  font-size: 13px;
+}
+
+.sidebar-left .action-btn {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.sidebar-left .receiver-panel {
+  gap: 8px;
+}
+
+.sidebar-left .field-info {
+  padding: 6px 10px;
+}
+
+.sidebar-left .field-info .label {
+  font-size: 11px;
+}
+
+.sidebar-left .field-info .value {
+  font-size: 12px;
 }
 
 /* Center/Right Visual Area */

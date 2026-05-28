@@ -230,13 +230,13 @@
         <div class="coord-row">
           <div class="coord-val">
             <span class="label">Local Time</span>
-            <span class="value" style="font-size: 13.5px;">{timeLocal}</span>
+            <span class="value">{timeLocal}</span>
           </div>
         </div>
         <div class="coord-row mt-4">
           <div class="coord-val">
             <span class="label">UTC Time</span>
-            <span class="value" style="font-size: 13.5px;">{timeUTC}</span>
+            <span class="value">{timeUTC}</span>
           </div>
         </div>
       </div>
