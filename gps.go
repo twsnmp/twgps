@@ -72,8 +72,6 @@ func (g *GPSService) GetState() GPSState {
 	g.Lock()
 	defer g.Unlock()
 	
-	ports, _ := serial.GetPortsList()
-	
 	// Create a deep copy of the state to avoid concurrent map read/write issues during JSON serialization
 	stateCopy := GPSState{
 		HasFix:         g.state.HasFix,
@@ -88,9 +86,10 @@ func (g *GPSService) GetState() GPSState {
 		NumSatellites:  g.state.NumSatellites,
 		ActivePort:     g.state.ActivePort,
 		Scanning:       g.state.Scanning,
-		AvailablePorts: ports,
+		AvailablePorts: make([]string, len(g.state.AvailablePorts)),
 		Satellites:     make(map[string]map[int64]SatelliteDetail),
 	}
+	copy(stateCopy.AvailablePorts, g.state.AvailablePorts)
 
 	for constel, sats := range g.state.Satellites {
 		stateCopy.Satellites[constel] = make(map[int64]SatelliteDetail)
@@ -220,6 +219,10 @@ func (g *GPSService) sniffPort(portName string, baud int) bool {
 }
 
 func (g *GPSService) readGpsData(ctx context.Context, portName string, baud int) {
+	// Give the OS a moment to release the serial port after sniffPort closes it.
+	// This prevents race conditions or hangs in USB serial drivers on Linux.
+	time.Sleep(200 * time.Millisecond)
+
 	mode := &serial.Mode{
 		BaudRate: baud,
 		DataBits: 8,
@@ -229,6 +232,7 @@ func (g *GPSService) readGpsData(ctx context.Context, portName string, baud int)
 
 	port, err := serial.Open(portName, mode)
 	if err != nil {
+		log.Printf("[GPS Scanner] Failed to reopen port %s for continuous read: %v", portName, err)
 		g.clearActivePort()
 		return
 	}
