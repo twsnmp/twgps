@@ -21,7 +21,7 @@ jobs:
             os: windows-latest
             artifact_name: twgps-windows-amd64.zip
           - platform: linux/amd64
-            os: ubuntu-latest
+            os: ubuntu-22.04
             artifact_name: twgps-linux-amd64.tar.gz
 
     steps:
