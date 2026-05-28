@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -87,5 +88,6 @@ jobs:
           files: release-artifacts/*
           draft: false
           prerelease: false
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v0.0.0-draft' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
