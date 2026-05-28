@@ -1,3 +1,10 @@
 [tools]
 go = "1.26"
 node = "20"
+
+[tasks]
+dev = "wails dev"
+build = "wails build"
+test = "go test ./..."
+clear = "rm -rf build/bin/ dist/"
+release-mac = "./scripts/release-mac.sh"
