@@ -24,7 +24,7 @@ jobs:
           - platform: linux/amd64
             os: ubuntu-24.04
             artifact_name: twgps-linux-amd64.tar.gz
-            tags: "-tags webkit2gtk_4_1"
+            tags: "-tags webkit2_41"
 
     steps:
       - name: Checkout repository
