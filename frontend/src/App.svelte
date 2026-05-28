@@ -246,7 +246,7 @@
       <!-- NTP Control Panel -->
       <div class="card-header">
         <Clock class="card-icon emerald" />
-        <h2>NTP / NTS Server</h2>
+        <h2>NTP Server</h2>
       </div>
       <div class="ntp-panel">
         <div class="ntp-status-box {ntpStats.running ? 'running' : 'stopped'}">
