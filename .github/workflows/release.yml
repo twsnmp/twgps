@@ -52,14 +52,14 @@ jobs:
         run: wails build -platform ${{ matrix.platform }} -clean
 
       - name: Package Release (Windows)
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           # Compress the compiled executable from build/bin into a zip
           Compress-Archive -Path build/bin/twgps.exe -DestinationPath ${{ matrix.artifact_name }}
 
       - name: Package Release (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           # Compress the compiled binary from build/bin into a tar.gz
           tar -czvf ${{ matrix.artifact_name }} -C build/bin twgps
