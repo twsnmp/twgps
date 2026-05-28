@@ -34,7 +34,8 @@ const translations = {
       clients: "Clients Connected",
       refId: "Reference ID",
       stop: "Stop Time Server",
-      start: "Start Time Server"
+      start: "Start Time Server",
+      startError: "Failed to start NTP Server. Make sure the port is not in use and that you have sufficient administrator privileges."
     },
     rcv: {
       active: "Active Port",
@@ -89,7 +90,8 @@ const translations = {
       clients: "接続中のクライアント",
       refId: "参照元 ID",
       stop: "タイムサーバー停止",
-      start: "タイムサーバー起動"
+      start: "タイムサーバー起動",
+      startError: "NTPサーバーの起動に失敗しました。ポートが他のプロセスに使用されていないこと、および十分な管理者権限があることを確認してください。"
     },
     rcv: {
       active: "アクティブポート",

@@ -27,8 +27,7 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.gpsService.Start(ctx)
-	// Start NTP server automatically on default port 1230 (non-privileged)
-	_ = a.ntpServer.Start(1230)
+	// Initial state of NTP server is stopped, so do not start automatically here.
 }
 
 // shutdown is called when the application is terminating

@@ -3,7 +3,7 @@
   import Globe from './components/Globe.svelte';
   import { i18n } from './i18n.svelte.js';
   import { GetGPSState, ForceGPSScan, GetNTPServerStats, ToggleNTPServer } from '../wailsjs/go/main/App.js';
-  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock } from '@lucide/svelte';
+  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock, AlertTriangle } from '@lucide/svelte';
 
   // Svelte 5 reactive states
   let gpsState = $state({
@@ -25,11 +25,12 @@
 
   let ntpStats = $state({
     running: false,
-    port: 1230,
+    port: 123,
     clientCount: 0
   });
 
-  let ntpPortInput = $state(1230);
+  let ntpPortInput = $state(123);
+  let ntpErrorMessage = $state("");
   let isDarkMode = $state(true);
 
   // Local clock state for fallback when GPS has no lock
@@ -89,8 +90,12 @@
 
   async function handleToggleNTP() {
     const nextState = !ntpStats.running;
+    ntpErrorMessage = ""; // Clear any previous error
     const res = await ToggleNTPServer(nextState, parseInt(ntpPortInput));
     console.log(res);
+    if (nextState && res && res.startsWith("Error starting NTP:")) {
+      ntpErrorMessage = res;
+    }
     const stats = await GetNTPServerStats();
     if (stats) ntpStats = stats;
   }
@@ -260,6 +265,17 @@
           <div class="status-label">{i18n.t('ntp.status')}</div>
           <div class="status-text">{ntpStats.running ? i18n.t('ntp.online') : i18n.t('ntp.offline')}</div>
         </div>
+
+        {#if ntpErrorMessage}
+          <div class="ntp-error-box">
+            <div class="error-header">
+              <AlertTriangle size={16} />
+              <span class="error-title">{i18n.t('ntp.startError')}</span>
+            </div>
+            <div class="error-detail">{ntpErrorMessage}</div>
+            <button class="close-error-btn" onclick={() => ntpErrorMessage = ""} aria-label="Dismiss error">✕</button>
+          </div>
+        {/if}
         
         <div class="form-row">
           <label for="ntp-port">{i18n.t('ntp.port')}</label>
@@ -371,3 +387,65 @@
     </div>
   </div>
 </div>
+
+<style>
+  .ntp-error-box {
+    position: relative;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 12px 32px 12px 12px;
+    margin: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .error-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f87171;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .error-detail {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    word-break: break-all;
+  }
+
+  .close-error-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .close-error-btn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+

@@ -25,7 +25,7 @@ type NTPServer struct {
 func NewNTPServer(gps *GPSService) *NTPServer {
 	return &NTPServer{
 		gpsService: gps,
-		port:       1230, // Default to a non-privileged port
+		port:       123, // Default to standard port 123
 		stopChan:   make(chan struct{}),
 	}
 }
