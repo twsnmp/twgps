@@ -1,10 +1,14 @@
 # twgps
 
+[English](README.md)
+
 `twgps` は、PC に接続された USB/シリアル GPS 受信機を利用して、お使いのコンピューターを **Stratum 1 NTP サーバー** にする軽量なマルチプラットフォーム対応のデスクトップアプリケーションです。GPS 受信機を自動的に検出し、衛星の配置や信号強度（SNR）をビジュアル化し、高精度な NTP 時刻を提供します。
 
 [Wails](https://wails.io/) (Go + Svelte) を使用して構築されています。
 
 ![twgps ダッシュボード](images/screenshot_ja.png)
+
+![twgps インフォグラフィック](images/infographic.png)
 
 ---
 

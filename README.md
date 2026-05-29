@@ -1,10 +1,14 @@
 # twgps
 
+[日本語 (Japanese)](README_ja.md)
+
 `twgps` is a lightweight, cross-platform desktop application that turns your computer into a **Stratum 1 NTP server** using a connected USB/Serial GPS receiver. It automatically detects your GPS receiver, visualizes satellite constellations and signal strengths, and serves high-precision NTP time.
 
 Built with [Wails](https://wails.io/) (Go + Svelte).
 
 ![twgps Dashboard](images/screenshot.png)
+
+![twgps Infographic](images/infographic.png)
 
 ---
 
