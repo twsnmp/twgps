@@ -136,12 +136,20 @@ fi
 
 info "Selected Installer Identity: $PKG_IDENTITY"
 
-# Step 5: Package the signed .app into an unsigned .pkg
+# Step 5: Package the signed .app into an unsigned .pkg (disabling relocation)
 UNSIGNED_PKG="dist/twgps-unsigned.pkg"
 SIGNED_PKG="dist/twgps.pkg"
+COMPONENT_PLIST="dist/components.plist"
 
 info "Creating the installer package..."
-pkgbuild --component "$APP_PATH" --install-location "/Applications" "$UNSIGNED_PKG"
+# Generate component plist to configure package behavior
+pkgbuild --analyze --root "dist" "$COMPONENT_PLIST"
+# Set BundleIsRelocatable to false so macOS installer doesn't relocate the app to development folders
+plutil -replace 0.BundleIsRelocatable -bool NO "$COMPONENT_PLIST"
+
+# Build package using the component plist
+pkgbuild --root "dist" --component-plist "$COMPONENT_PLIST" --install-location "/Applications" "$UNSIGNED_PKG"
+rm -f "$COMPONENT_PLIST"
 success "Installer package created at $UNSIGNED_PKG"
 
 # Step 6: Sign the installer package
