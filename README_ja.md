@@ -6,9 +6,9 @@
 
 [Wails](https://wails.io/) (Go + Svelte) を使用して構築されています。
 
-![twgps ダッシュボード](images/screenshot_ja.png)
-
 ![twgps インフォグラフィック](images/infographic.png)
+
+![twgps ダッシュボード](images/screenshot_ja.png)
 
 ---
 

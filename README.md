@@ -6,9 +6,9 @@
 
 Built with [Wails](https://wails.io/) (Go + Svelte).
 
-![twgps Dashboard](images/screenshot.png)
-
 ![twgps Infographic](images/infographic.png)
+
+![twgps Dashboard](images/screenshot.png)
 
 ---
 
