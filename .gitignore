@@ -67,3 +67,9 @@ go.work.sum
 # Release files
 dist/
 
+# Playwright E2E test artifacts
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+
