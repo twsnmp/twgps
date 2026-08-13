@@ -3,10 +3,11 @@ go = "1.26"
 node = "20"
 
 [tasks]
-dev = "wails dev"
+dev = "wails dev -devserver ${WAILS_DEVSERVER:-127.0.0.1:34116}"
 build = "wails build"
 test = "go test ./..."
 test-e2e = "cd frontend && npm run test:e2e"
 test-e2e-ui = "cd frontend && npm run test:e2e:ui"
 clear = "rm -rf build/bin/ dist/"
 release-mac = "./scripts/release-mac.sh"
+

@@ -134,15 +134,16 @@ func (g *GPSService) autoScanLoop() {
 
 		foundPort := ""
 		for _, portName := range ports {
-			// Skip typical internal/bluetooth/debug serial interfaces to avoid long hangs
+			// Skip typical internal/bluetooth/debug serial interfaces and macOS /dev/tty.* (prefer /dev/cu.*) to avoid long hangs
 			if strings.Contains(portName, "Bluetooth") || strings.Contains(portName, "wlan") || 
-				strings.Contains(portName, "IncomingPort") || strings.Contains(portName, "debug-console") {
-				log.Printf("[GPS Scanner] Skipping internal/bluetooth/debug port: %s", portName)
+				strings.Contains(portName, "IncomingPort") || strings.Contains(portName, "debug-console") ||
+				strings.HasPrefix(portName, "/dev/tty.") {
+				log.Printf("[GPS Scanner] Skipping internal/bluetooth/debug/tty port: %s", portName)
 				continue
 			}
 
-			// Try common GPS baud rates: 115200 (standard for DOCTORADIO GR7-10HZ), then 9600
-			for _, baud := range []int{115200, 9600} {
+			// Try common GPS baud rates: 115200 (standard for DOCTORADIO GR7-10HZ), 9600, 38400, 4800
+			for _, baud := range []int{115200, 9600, 38400, 4800} {
 				log.Printf("[GPS Scanner] Sniffing port %s at %d baud...", portName, baud)
 				if g.sniffPort(portName, baud) {
 					log.Printf("[GPS Scanner] Valid GPS data detected on port %s at %d baud!", portName, baud)
@@ -193,28 +194,43 @@ func (g *GPSService) sniffPort(portName string, baud int) bool {
 	}
 	defer port.Close()
 
-	// Set a quick read deadline/timeout
-	_ = port.SetReadTimeout(2 * time.Second)
+	// Set a 1-second timeout per read call
+	_ = port.SetReadTimeout(1 * time.Second)
 
-	reader := bufio.NewReader(port)
-	// Try reading a few lines to look for NMEA patterns
-	for i := 0; i < 5; i++ {
-		line, err := reader.ReadString('\n')
+	buf := make([]byte, 1024)
+	accumulated := ""
+	startTime := time.Now()
+
+	// Sniff for at most 2 seconds total per baud rate
+	for time.Since(startTime) < 2000*time.Millisecond {
+		n, err := port.Read(buf)
 		if err != nil {
-			log.Printf("[GPS Sniffer] Read error/timeout on port %s: %v", portName, err)
+			log.Printf("[GPS Sniffer] Read error on port %s: %v", portName, err)
 			return false
 		}
-		line = strings.TrimSpace(line)
-		log.Printf("[GPS Sniffer] Read line from %s: %q", portName, line)
-		if strings.HasPrefix(line, "$GP") || strings.HasPrefix(line, "$GN") || 
-			strings.HasPrefix(line, "$GL") || strings.HasPrefix(line, "$GA") || 
-			strings.HasPrefix(line, "$GB") || strings.HasPrefix(line, "$BD") ||
-			strings.HasPrefix(line, "$QZ") {
-			log.Printf("[GPS Sniffer] NMEA header matched: %s", line[:3])
+		if n == 0 {
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+
+		accumulated += string(buf[:n])
+
+		// Look for NMEA sentence headers in accumulated data
+		if strings.Contains(accumulated, "$GP") || strings.Contains(accumulated, "$GN") ||
+			strings.Contains(accumulated, "$GL") || strings.Contains(accumulated, "$GA") ||
+			strings.Contains(accumulated, "$GB") || strings.Contains(accumulated, "$BD") ||
+			strings.Contains(accumulated, "$QZ") {
+			log.Printf("[GPS Sniffer] NMEA header matched on port %s at %d baud!", portName, baud)
 			return true
 		}
+
+		// Prevent accumulated buffer from growing endlessly if receiving non-NMEA data
+		if len(accumulated) > 4096 {
+			accumulated = accumulated[2048:]
+		}
 	}
-	log.Printf("[GPS Sniffer] Port %s did not produce valid NMEA data in 5 lines.", portName)
+
+	log.Printf("[GPS Sniffer] Port %s at %d baud did not produce valid NMEA headers within timeout.", portName, baud)
 	return false
 }
 

@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1, // Wails/Go backend is a single instance, so run tests serially
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:34115',
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || (process.env.WAILS_DEVSERVER ? (process.env.WAILS_DEVSERVER.startsWith('http') ? process.env.WAILS_DEVSERVER : `http://${process.env.WAILS_DEVSERVER}`) : 'http://127.0.0.1:34116'),
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
