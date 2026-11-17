@@ -1,9 +1,13 @@
 <script>
   import { onMount } from 'svelte';
   import Globe from './components/Globe.svelte';
+  import CalendarMoonView from './components/CalendarMoonView.svelte';
   import { i18n } from './i18n.svelte.js';
+  import { getKyureki } from './lib/kyureki.js';
+  import { getWareki } from './lib/japaneseAlmanac.js';
+  import { getMoonAndSunInfo } from './lib/astronomy.js';
   import { GetGPSState, ForceGPSScan, GetNTPServerStats, ToggleNTPServer } from '../wailsjs/go/main/App.js';
-  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock, AlertTriangle } from '@lucide/svelte';
+  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock, AlertTriangle, Calendar } from '@lucide/svelte';
 
   // Svelte 5 reactive states
   let gpsState = $state({
@@ -32,9 +36,30 @@
   let ntpPortInput = $state(123);
   let ntpErrorMessage = $state("");
   let isDarkMode = $state(true);
+  let activeTab = $state('dashboard');
+  let nowDate = $state(new Date());
 
   // Local clock state for fallback when GPS has no lock
   let systemTime = $state({ utc: "", local: "" });
+
+  let liveDate = $derived.by(() => {
+    if (gpsState.date && gpsState.time) {
+      const parsed = new Date(`${gpsState.date}T${gpsState.time}Z`);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return nowDate;
+  });
+
+  // Compact sidebar summary (updated at most per minute/date or live)
+  let sidebarSummary = $derived.by(() => {
+    const d = liveDate;
+    const wareki = getWareki(d);
+    const kyureki = getKyureki(d);
+    const lat = gpsState.hasFix ? gpsState.latitude : 35.6812;
+    const lon = gpsState.hasFix ? gpsState.longitude : 139.7671;
+    const astro = getMoonAndSunInfo(d, lat, lon, 0);
+    return { wareki, kyureki, moonAge: astro.moon.ageDays, illum: astro.moon.illuminationPct };
+  });
 
   // Dynamically compute active UTC time (preferring GPS atomic time, removing subseconds decimals)
   let timeUTC = $derived.by(() => {
@@ -122,6 +147,7 @@
     // System clock ticker to maintain live clock display
     const systemClock = setInterval(() => {
       const now = new Date();
+      nowDate = now;
       
       // Format Local Time
       const ly = now.getFullYear();
@@ -180,6 +206,22 @@
       <div class="logo-circle"></div>
       <h1>twgps <span class="badge">Stratum 1</span></h1>
     </div>
+    <nav class="nav-tabs" aria-label="Main Views">
+      <button
+        class="nav-tab {activeTab === 'dashboard' ? 'active' : ''}"
+        onclick={() => (activeTab = 'dashboard')}
+      >
+        <Compass size={15} />
+        {i18n.t('nav.dashboard')}
+      </button>
+      <button
+        class="nav-tab {activeTab === 'calendar' ? 'active' : ''}"
+        onclick={() => (activeTab = 'calendar')}
+      >
+        <Calendar size={15} />
+        {i18n.t('nav.calendarMoon')}
+      </button>
+    </nav>
     <div class="nav-controls">
       <div class="status-indicator {gpsState.hasFix ? 'active' : 'searching'}">
         <span class="pulse-dot"></span>
@@ -201,6 +243,11 @@
     </div>
   </header>
 
+  {#if activeTab === 'calendar'}
+    <div class="calendar-scroll-area">
+      <CalendarMoonView {liveDate} {gpsState} />
+    </div>
+  {:else}
   <div class="main-content">
     <!-- Left Panel: Coordinates & Controls -->
     <aside class="sidebar-left card">
@@ -251,6 +298,13 @@
             <span class="value">{timeUTC}</span>
           </div>
         </div>
+        <button class="koyomi-mini-btn mt-4" onclick={() => (activeTab = 'calendar')}>
+          <span>
+            {i18n.currentLocale === 'ja' ? sidebarSummary.wareki.formattedJa : sidebarSummary.wareki.formattedEn}
+            · {i18n.currentLocale === 'ja' ? sidebarSummary.kyureki.rokuyo.ja : sidebarSummary.kyureki.rokuyo.en}
+          </span>
+          <span class="moon-mini">🌙 {sidebarSummary.moonAge.toFixed(1)}d ({sidebarSummary.illum.toFixed(0)}%)</span>
+        </button>
       </div>
 
       <hr class="separator" />
@@ -386,9 +440,76 @@
       </section>
     </div>
   </div>
+  {/if}
 </div>
 
 <style>
+  .nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--input-bg);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+  }
+
+  .nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .nav-tab.active {
+    background: rgba(0, 217, 255, 0.16);
+    color: var(--accent-cyan);
+    box-shadow: inset 0 0 0 1px rgba(0, 217, 255, 0.35);
+  }
+
+  .calendar-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .koyomi-mini-btn {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--separator-color);
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .koyomi-mini-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--text-primary);
+  }
+
+  .moon-mini {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
   .ntp-error-box {
     position: relative;
     background: rgba(239, 68, 68, 0.12);

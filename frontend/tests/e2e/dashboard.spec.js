@@ -69,4 +69,28 @@ test.describe('twgps Dashboard E2E Tests', () => {
     await expect(ntpStatusText).toHaveText(/OFFLINE|オフライン/i);
     await expect(ntpPortInput).toBeEnabled();
   });
+
+  test('should switch to Calendar & Moon view and render calendars and moon graphics', async ({ page }) => {
+    const calTab = page.locator('.nav-tab').nth(1);
+    await calTab.click();
+
+    // Verify Moon graphic and Sky Dome render
+    await expect(page.locator('.moon-svg')).toBeVisible();
+    await expect(page.locator('.sky-dome-svg')).toBeVisible();
+
+    // Switch to Custom Date/Location mode and set a known date
+    const customBtn = page.locator('.mode-btn').nth(1);
+    await customBtn.click();
+
+    const dateInput = page.locator('input[type="datetime-local"]');
+    await dateInput.fill('2026-11-17T12:00');
+
+    // Verify Mayan Long Count and Wareki/Koki appear
+    await expect(page.locator('.cal-moon-container')).toContainText('13.0.14.1.19');
+    await expect(page.locator('.cal-moon-container')).toContainText('2686');
+
+    // Switch back to Dashboard tab
+    await page.locator('.nav-tab').nth(0).click();
+    await expect(page.locator('.ntp-panel')).toBeVisible();
+  });
 });
