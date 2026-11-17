@@ -21,28 +21,40 @@ type SatelliteDetail struct {
 }
 
 type GPSState struct {
-	HasFix         bool                                           `json:"hasFix"`
-	Time           string                                         `json:"time"`
-	Date           string                                         `json:"date"`
-	Latitude       float64                                        `json:"latitude"`
-	Longitude      float64                                        `json:"longitude"`
-	Altitude       float64                                        `json:"altitude"`
-	SpeedKnots     float64                                        `json:"speedKnots"`
-	SpeedKmh       float64                                        `json:"speedKmh"`
-	FixQuality     string                                         `json:"fixQuality"`
-	NumSatellites  int64                                          `json:"numSatellites"`
-	Satellites     map[string]map[int64]SatelliteDetail           `json:"satellites"` // Talker -> PRN -> Detail
-	ActivePort     string                                         `json:"activePort"`
-	Scanning       bool                                           `json:"scanning"`
-	AvailablePorts []string                                       `json:"availablePorts"`
+	HasFix          bool                                 `json:"hasFix"`
+	Time            string                               `json:"time"`
+	Date            string                               `json:"date"`
+	Latitude        float64                              `json:"latitude"`
+	Longitude       float64                              `json:"longitude"`
+	Altitude        float64                              `json:"altitude"`
+	SpeedKnots      float64                              `json:"speedKnots"`
+	SpeedKmh        float64                              `json:"speedKmh"`
+	DisplaySpeedKmh float64                              `json:"displaySpeedKmh"`
+	IsStationary    bool                                 `json:"isStationary"`
+	FixQuality      string                               `json:"fixQuality"`
+	NumSatellites   int64                                `json:"numSatellites"`
+	Satellites      map[string]map[int64]SatelliteDetail `json:"satellites"` // Talker -> PRN -> Detail
+	ActivePort      string                               `json:"activePort"`
+	Scanning        bool                                 `json:"scanning"`
+	AvailablePorts  []string                             `json:"availablePorts"`
+}
+
+type posSample struct {
+	ts  time.Time
+	lat float64
+	lon float64
 }
 
 type GPSService struct {
 	sync.Mutex
-	state     GPSState
-	ctx       context.Context
-	cancelRead context.CancelFunc
-	running   bool
+	state            GPSState
+	ctx              context.Context
+	cancelRead       context.CancelFunc
+	running          bool
+	history          *PositionHistory
+	smoothedSpeedKmh float64
+	hasSpeedSample   bool
+	recentPositions  []posSample
 }
 
 func NewGPSService() *GPSService {
@@ -50,21 +62,55 @@ func NewGPSService() *GPSService {
 		state: GPSState{
 			Satellites: make(map[string]map[int64]SatelliteDetail),
 		},
+		history: NewPositionHistory(DefaultHistoryFilePath()),
 	}
 }
 
 func (g *GPSService) Start(ctx context.Context) {
 	g.ctx = ctx
 	g.running = true
+	if err := g.history.Load(); err != nil {
+		log.Printf("[PositionHistory] Failed to load history: %v", err)
+	}
 	go g.autoScanLoop()
+	go g.autoSaveLoop()
 }
 
 func (g *GPSService) Stop() {
 	g.Lock()
-	defer g.Unlock()
 	g.running = false
 	if g.cancelRead != nil {
 		g.cancelRead()
+	}
+	g.Unlock()
+
+	if err := g.history.Save(); err != nil {
+		log.Printf("[PositionHistory] Failed to save history on stop: %v", err)
+	}
+}
+
+func (g *GPSService) autoSaveLoop() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for {
+		if g.ctx != nil {
+			select {
+			case <-g.ctx.Done():
+				return
+			case <-ticker.C:
+				if err := g.history.Save(); err != nil {
+					log.Printf("[PositionHistory] Periodic save error: %v", err)
+				}
+			}
+		} else {
+			time.Sleep(10 * time.Minute)
+			if !g.running {
+				return
+			}
+			if err := g.history.Save(); err != nil {
+				log.Printf("[PositionHistory] Periodic save error: %v", err)
+			}
+		}
 	}
 }
 
@@ -74,20 +120,22 @@ func (g *GPSService) GetState() GPSState {
 	
 	// Create a deep copy of the state to avoid concurrent map read/write issues during JSON serialization
 	stateCopy := GPSState{
-		HasFix:         g.state.HasFix,
-		Time:           g.state.Time,
-		Date:           g.state.Date,
-		Latitude:       g.state.Latitude,
-		Longitude:      g.state.Longitude,
-		Altitude:       g.state.Altitude,
-		SpeedKnots:     g.state.SpeedKnots,
-		SpeedKmh:       g.state.SpeedKmh,
-		FixQuality:     g.state.FixQuality,
-		NumSatellites:  g.state.NumSatellites,
-		ActivePort:     g.state.ActivePort,
-		Scanning:       g.state.Scanning,
-		AvailablePorts: make([]string, len(g.state.AvailablePorts)),
-		Satellites:     make(map[string]map[int64]SatelliteDetail),
+		HasFix:          g.state.HasFix,
+		Time:            g.state.Time,
+		Date:            g.state.Date,
+		Latitude:        g.state.Latitude,
+		Longitude:       g.state.Longitude,
+		Altitude:        g.state.Altitude,
+		SpeedKnots:      g.state.SpeedKnots,
+		SpeedKmh:        g.state.SpeedKmh,
+		DisplaySpeedKmh: g.state.DisplaySpeedKmh,
+		IsStationary:    g.state.IsStationary,
+		FixQuality:      g.state.FixQuality,
+		NumSatellites:   g.state.NumSatellites,
+		ActivePort:      g.state.ActivePort,
+		Scanning:        g.state.Scanning,
+		AvailablePorts:  make([]string, len(g.state.AvailablePorts)),
+		Satellites:      make(map[string]map[int64]SatelliteDetail),
 	}
 	copy(stateCopy.AvailablePorts, g.state.AvailablePorts)
 
@@ -297,6 +345,7 @@ func (g *GPSService) readGpsData(ctx context.Context, portName string, baud int)
 			g.clearActivePort()
 			return
 		case <-ticker.C:
+			g.recordPositionSample(time.Now())
 			g.publishState()
 		}
 	}
@@ -332,8 +381,13 @@ func (g *GPSService) updateState(sentence nmea.Sentence) {
 			g.state.HasFix = true
 			g.state.Latitude = s.Latitude
 			g.state.Longitude = s.Longitude
+			g.updateSpeedFilterLocked(g.state.SpeedKmh, s.Latitude, s.Longitude, time.Now())
 		} else {
 			g.state.HasFix = false
+			g.state.DisplaySpeedKmh = 0
+			g.state.IsStationary = false
+			g.hasSpeedSample = false
+			g.recentPositions = nil
 		}
 
 	case nmea.GGA:
@@ -432,4 +486,91 @@ func (g *GPSService) ForceScan() {
 		g.cancelRead()
 	}
 	g.Unlock()
+}
+
+// updateSpeedFilterLocked smooths raw GNSS speed (EMA) and determines stationary state
+// using both smoothed speed and 10-second net displacement with hysteresis.
+// Caller must hold g.Mutex.
+func (g *GPSService) updateSpeedFilterLocked(rawSpeedKmh, lat, lon float64, now time.Time) {
+	const (
+		emaAlpha              = 0.25
+		stationaryEnterSpeed  = 1.0 // km/h
+		stationaryExitSpeed   = 1.8 // km/h
+		stationaryEnterDispM  = 5.0 // meters over window
+		stationaryExitDispM   = 8.0 // meters over window
+		positionWindowSeconds = 10 * time.Second
+	)
+
+	if !g.hasSpeedSample {
+		g.smoothedSpeedKmh = rawSpeedKmh
+		g.hasSpeedSample = true
+	} else {
+		g.smoothedSpeedKmh = emaAlpha*rawSpeedKmh + (1.0-emaAlpha)*g.smoothedSpeedKmh
+	}
+
+	g.recentPositions = append(g.recentPositions, posSample{ts: now, lat: lat, lon: lon})
+	cutoff := now.Add(-positionWindowSeconds)
+	keepIdx := 0
+	for keepIdx < len(g.recentPositions) && g.recentPositions[keepIdx].ts.Before(cutoff) {
+		keepIdx++
+	}
+	if keepIdx > 0 {
+		g.recentPositions = append([]posSample(nil), g.recentPositions[keepIdx:]...)
+	}
+
+	netDispM := 0.0
+	if len(g.recentPositions) >= 2 {
+		first := g.recentPositions[0]
+		last := g.recentPositions[len(g.recentPositions)-1]
+		netDispM = haversineMeters(first.lat, first.lon, last.lat, last.lon)
+	}
+
+	if g.state.IsStationary {
+		if g.smoothedSpeedKmh >= stationaryExitSpeed || netDispM >= stationaryExitDispM {
+			g.state.IsStationary = false
+			g.state.DisplaySpeedKmh = g.smoothedSpeedKmh
+		} else {
+			g.state.DisplaySpeedKmh = 0.0
+		}
+	} else {
+		if g.smoothedSpeedKmh < stationaryEnterSpeed && netDispM < stationaryEnterDispM {
+			g.state.IsStationary = true
+			g.state.DisplaySpeedKmh = 0.0
+		} else {
+			g.state.DisplaySpeedKmh = g.smoothedSpeedKmh
+		}
+	}
+}
+
+func (g *GPSService) recordPositionSample(now time.Time) {
+	g.Lock()
+	hasFix := g.state.HasFix
+	lat := g.state.Latitude
+	lon := g.state.Longitude
+	alt := g.state.Altitude
+	g.Unlock()
+
+	if !hasFix {
+		return
+	}
+	g.history.AddSample(now, lat, lon, alt)
+}
+
+func (g *GPSService) GetPositionHistory(rangeKey string) PositionHistoryResponse {
+	return g.history.GetHistory(rangeKey)
+}
+
+func (g *GPSService) ResetPositionOrigin() bool {
+	g.Lock()
+	hasFix := g.state.HasFix
+	lat := g.state.Latitude
+	lon := g.state.Longitude
+	alt := g.state.Altitude
+	g.Unlock()
+
+	return g.history.ResetOrigin(lat, lon, alt, hasFix)
+}
+
+func (g *GPSService) ExportPositionHistoryCSV(rangeKey string) (string, error) {
+	return g.history.ExportCSV(rangeKey)
 }

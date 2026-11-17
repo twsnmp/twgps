@@ -9,7 +9,8 @@ const translations = {
       theme: "Toggle Theme",
       lang: "Language",
       dashboard: "GPS / NTP",
-      calendarMoon: "Calendar & Moon"
+      calendarMoon: "Calendar & Moon",
+      drift: "Position Drift"
     },
     panels: {
       position: "Position Matrix",
@@ -22,7 +23,9 @@ const translations = {
       latitude: "Latitude",
       longitude: "Longitude",
       altitude: "Altitude (MSL)",
-      speed: "Speed"
+      speed: "Speed",
+      stationary: "Stationary",
+      rawSpeed: "Raw"
     },
     time: {
       local: "Local Time",
@@ -55,6 +58,35 @@ const translations = {
       "BeiDou": "BeiDou",
       "みちびき(QZ)": "QZSS (MICHIBIKI)",
       "補正信号(SBAS/MSAS)": "SBAS/MSAS"
+    },
+    drift: {
+      title: "Long-Term Position Stability & Drift",
+      range1h: "1 Hour (Sec)",
+      range24h: "24 Hours (Min)",
+      range30d: "30 Days (Hour)",
+      rangeAll: "All Time (Day)",
+      unitAuto: "Auto",
+      modeComponents: "N / E / Alt",
+      modeDistance: "Horizontal Dist",
+      resetOrigin: "Set Current as Origin",
+      resetConfirm: "Reset reference origin to current position?",
+      exportCsv: "Export CSV",
+      exportedTo: "Saved to",
+      originTitle: "Reference Origin",
+      samples: "Samples",
+      latestOffset: "Latest Offset",
+      annualTrend: "Annual Linear Trend",
+      insufficientTrend: "Collecting daily/multi-point data...",
+      maxMeanDrift: "Mean / Max Drift",
+      timeSeriesTitle: "Displacement Over Time",
+      scatterTitle: "2D Position Distribution (East vs North)",
+      north: "North (ΔN)",
+      east: "East (ΔE)",
+      altitude: "Altitude (ΔAlt)",
+      distance: "Distance",
+      trendLine: "Trend",
+      noData: "Waiting for valid GPS fix to record position history...",
+      note: "Vector components (ΔN, ΔE, ΔAlt) are averaged per bucket so random noise cancels out over long periods."
     }
   },
   ja: {
@@ -67,7 +99,8 @@ const translations = {
       theme: "テーマ切り替え",
       lang: "言語",
       dashboard: "GPS / NTP",
-      calendarMoon: "暦・月"
+      calendarMoon: "暦・月",
+      drift: "位置ドリフト"
     },
     panels: {
       position: "位置マトリクス",
@@ -80,7 +113,9 @@ const translations = {
       latitude: "緯度",
       longitude: "経度",
       altitude: "高度 (平均海面)",
-      speed: "速度"
+      speed: "速度",
+      stationary: "静止",
+      rawSpeed: "生値"
     },
     time: {
       local: "ローカル時刻",
@@ -113,6 +148,35 @@ const translations = {
       "BeiDou": "BeiDou",
       "みちびき(QZ)": "みちびき(QZSS)",
       "補正信号(SBAS/MSAS)": "補正信号(SBAS/MSAS)"
+    },
+    drift: {
+      title: "長期位置安定性・ドリフト監視",
+      range1h: "1時間 (秒)",
+      range24h: "24時間 (分)",
+      range30d: "30日 (時間)",
+      rangeAll: "全期間 (日)",
+      unitAuto: "自動",
+      modeComponents: "南北・東西・高度",
+      modeDistance: "水平距離",
+      resetOrigin: "現在位置を基準に設定",
+      resetConfirm: "基準点を現在の最新位置に再設定しますか？",
+      exportCsv: "CSV出力",
+      exportedTo: "保存完了",
+      originTitle: "基準点座標",
+      samples: "サンプル数",
+      latestOffset: "最新ズレ量",
+      annualTrend: "年次推定移動トレンド",
+      insufficientTrend: "複数日/複数点のデータ収集中...",
+      maxMeanDrift: "平均 / 最大ドリフト",
+      timeSeriesTitle: "基準点からの位置変位 (時系列)",
+      scatterTitle: "2D 位置分布 (東西 × 南北)",
+      north: "南北 (ΔN)",
+      east: "東西 (ΔE)",
+      altitude: "高度 (ΔAlt)",
+      distance: "水平距離",
+      trendLine: "線形トレンド",
+      noData: "有効な GPS 測位を待機中（測位開始後に位置履歴を記録します）...",
+      note: "南北・東西・高度のベクトル成分ごとに平均化するため、長期稼働によりランダム誤差が相殺され数ミリ単位の傾向を捉えられます。"
     },
     cal: {
       liveMode: "リアルタイム (GPS / システム)",

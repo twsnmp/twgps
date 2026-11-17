@@ -2,12 +2,13 @@
   import { onMount } from 'svelte';
   import Globe from './components/Globe.svelte';
   import CalendarMoonView from './components/CalendarMoonView.svelte';
+  import PositionDriftView from './components/PositionDriftView.svelte';
   import { i18n } from './i18n.svelte.js';
   import { getKyureki } from './lib/kyureki.js';
   import { getWareki } from './lib/japaneseAlmanac.js';
   import { getMoonAndSunInfo } from './lib/astronomy.js';
   import { GetGPSState, ForceGPSScan, GetNTPServerStats, ToggleNTPServer } from '../wailsjs/go/main/App.js';
-  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock, AlertTriangle, Calendar } from '@lucide/svelte';
+  import { Play, Square, RefreshCw, Sun, Moon, Compass, Radio, Cpu, Clock, AlertTriangle, Calendar, TrendingUp } from '@lucide/svelte';
 
   // Svelte 5 reactive states
   let gpsState = $state({
@@ -19,6 +20,8 @@
     altitude: 0,
     speedKnots: 0,
     speedKmh: 0,
+    displaySpeedKmh: 0,
+    isStationary: false,
     fixQuality: "0",
     numSatellites: 0,
     satellites: {},
@@ -221,6 +224,13 @@
         <Calendar size={15} />
         {i18n.t('nav.calendarMoon')}
       </button>
+      <button
+        class="nav-tab {activeTab === 'drift' ? 'active' : ''}"
+        onclick={() => (activeTab = 'drift')}
+      >
+        <TrendingUp size={15} />
+        {i18n.t('nav.drift')}
+      </button>
     </nav>
     <div class="nav-controls">
       <div class="status-indicator {gpsState.hasFix ? 'active' : 'searching'}">
@@ -247,6 +257,10 @@
     <div class="calendar-scroll-area">
       <CalendarMoonView {liveDate} {gpsState} />
     </div>
+  {:else if activeTab === 'drift'}
+    <div class="calendar-scroll-area">
+      <PositionDriftView {isDarkMode} />
+    </div>
   {:else}
   <div class="main-content">
     <!-- Left Panel: Coordinates & Controls -->
@@ -271,9 +285,16 @@
             <span class="label">{i18n.t('pos.altitude')}</span>
             <span class="value">{gpsState.hasFix ? gpsState.altitude.toFixed(1) + ' m' : '----.- m'}</span>
           </div>
-          <div class="coord-val">
-            <span class="label">{i18n.t('pos.speed')}</span>
-            <span class="value">{gpsState.hasFix ? gpsState.speedKmh.toFixed(1) + ' km/h' : '--.- km/h'}</span>
+          <div class="coord-val" title={gpsState.hasFix ? `${i18n.t('pos.rawSpeed')}: ${gpsState.speedKmh.toFixed(1)} km/h` : ''}>
+            <span class="label">
+              {i18n.t('pos.speed')}
+              {#if gpsState.hasFix && gpsState.isStationary}
+                <span class="stationary-badge">{i18n.t('pos.stationary')}</span>
+              {/if}
+            </span>
+            <span class="value">
+              {gpsState.hasFix ? (gpsState.displaySpeedKmh ?? gpsState.speedKmh).toFixed(1) + ' km/h' : '--.- km/h'}
+            </span>
           </div>
         </div>
       </div>
@@ -556,6 +577,19 @@
   .close-error-btn:hover {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
+  }
+
+  .stationary-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    vertical-align: middle;
   }
 
   @keyframes fadeIn {

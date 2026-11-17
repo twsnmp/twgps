@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -63,4 +67,41 @@ func (a *App) ToggleNTPServer(enabled bool, port int) string {
 	}
 	a.ntpServer.Stop()
 	return "NTP server stopped"
+}
+
+// GetPositionHistory returns aggregated position drift history for the specified range ("1h", "24h", "30d", "all").
+func (a *App) GetPositionHistory(rangeKey string) PositionHistoryResponse {
+	return a.gpsService.GetPositionHistory(rangeKey)
+}
+
+// ResetPositionOrigin sets the reference origin to the current/latest position.
+func (a *App) ResetPositionOrigin() bool {
+	return a.gpsService.ResetPositionOrigin()
+}
+
+// ExportPositionHistoryCSV opens a save file dialog and writes the requested history range as CSV.
+func (a *App) ExportPositionHistoryCSV(rangeKey string) (string, error) {
+	csvData, err := a.gpsService.ExportPositionHistoryCSV(rangeKey)
+	if err != nil {
+		return "", err
+	}
+
+	defaultName := fmt.Sprintf("twgps_position_%s_%s.csv", rangeKey, time.Now().Format("20060102_150405"))
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Export Position History CSV",
+		DefaultFilename: defaultName,
+		Filters: []runtime.FileFilter{
+			{DisplayName: "CSV Files (*.csv)", Pattern: "*.csv"},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, []byte(csvData), 0644); err != nil {
+		return "", err
+	}
+	return path, nil
 }
