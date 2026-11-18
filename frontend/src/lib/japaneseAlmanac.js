@@ -89,6 +89,75 @@ function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
+const JST_OFFSET_MS = 9 * 3600 * 1000;
+const solsticeJdnCache = new Map();
+
+function getSolsticeJdnJst(year, isWinter) {
+  const key = `${year}:${isWinter ? 'W' : 'S'}`;
+  if (solsticeJdnCache.has(key)) return solsticeJdnCache.get(key);
+
+  const targetLon = isWinter ? 270 : 90;
+  const searchStart = new Date(Date.UTC(year, isWinter ? 11 : 5, 1));
+  const ev = Astronomy.SearchSunLongitude(targetLon, searchStart, 40);
+  let sJdn;
+  if (ev) {
+    const jst = new Date(ev.date.getTime() + JST_OFFSET_MS);
+    sJdn = Math.floor(
+      gregorianToJD(jst.getUTCFullYear(), jst.getUTCMonth() + 1, jst.getUTCDate()) + 0.5
+    );
+  } else {
+    sJdn = Math.floor(gregorianToJD(year, isWinter ? 12 : 6, 21) + 0.5);
+  }
+  if (solsticeJdnCache.size > 200) solsticeJdnCache.clear();
+  solsticeJdnCache.set(key, sJdn);
+  return sJdn;
+}
+
+function getKinoeneAnchor(year, isWinter) {
+  const sJdn = getSolsticeJdnJst(year, isWinter);
+  // 0 = 甲子 (Kinoe-Ne), 30 = 甲午 (Kinoe-Uma), 59 = 癸亥 (Mizunoto-I)
+  const k = mod(sJdn + 49, 60);
+  const kinoeneJdn = k <= 29 ? sJdn - k : sJdn + (60 - k);
+  return { isWinter, kinoeneJdn };
+}
+
+/**
+ * Compute Day Kyusei (日家九星) using traditional Yoton/Inton switching
+ * anchored to the Kinoe-Ne (甲子) nearest to each solstice, including the
+ * ~11-12 year leap-period (九星の閏) adjustment starting on Kinoe-Uma (甲午).
+ */
+function getDayKyusei(year, jdn) {
+  const anchors = [
+    getKinoeneAnchor(year - 2, true),
+    getKinoeneAnchor(year - 1, false),
+    getKinoeneAnchor(year - 1, true),
+    getKinoeneAnchor(year, false),
+    getKinoeneAnchor(year, true),
+    getKinoeneAnchor(year + 1, false)
+  ];
+
+  let active = null;
+  for (let i = 1; i < anchors.length; i++) {
+    const prev = anchors[i - 1];
+    const curr = anchors[i];
+    const isLeapSpan = curr.kinoeneJdn - prev.kinoeneJdn >= 240;
+    const dir = curr.isWinter ? 1 : -1;
+    const startJdn = isLeapSpan ? curr.kinoeneJdn - 30 : curr.kinoeneJdn;
+    const startStar = curr.isWinter ? (isLeapSpan ? 7 : 1) : (isLeapSpan ? 3 : 9);
+    if (startJdn <= jdn) {
+      active = { startJdn, startStar, dir };
+    }
+  }
+
+  if (!active) {
+    return KYUSEI[mod(jdn, 9)];
+  }
+
+  const delta = jdn - active.startJdn;
+  const dayKyuseiNum = mod(active.startStar - 1 + active.dir * delta, 9) + 1;
+  return KYUSEI[dayKyuseiNum - 1];
+}
+
 export function getWareki(date) {
   const y = date.getFullYear();
   const m = date.getMonth() + 1;
@@ -183,9 +252,8 @@ export function getJapaneseAlmanac(date, kyurekiInfo) {
   const yearKyuseiNum = mod(11 - mod(y, 9), 9) || 9;
   const yearKyusei = KYUSEI[yearKyuseiNum - 1];
 
-  // Day Kyusei (approximate continuous cycle, standard 陽遁/陰遁 or simple 9-day cycle)
-  const dayKyuseiNum = mod(jdn, 9) + 1;
-  const dayKyusei = KYUSEI[dayKyuseiNum - 1];
+  // Day Kyusei (日家九星: Yoton/Inton anchored to solstice Kinoe-Ne, with Kinoe-Uma leap)
+  const dayKyusei = getDayKyusei(y, jdn);
 
   // 十二直 (Junichoku): (dayBranch - setsukiBranch + 12) % 12
   const junichokuIdx = mod(dayEto.branchIdx - setsukiBranch, 12);
