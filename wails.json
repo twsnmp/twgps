@@ -9,5 +9,12 @@
   "author": {
     "name": "twsnmp",
     "email": "ymi@twise.co.jp"
+  },
+  "info": {
+    "companyName": "twsnmp",
+    "productName": "twgps",
+    "productVersion": "0.2.0",
+    "copyright": "Copyright (c) 2026 twsnmp",
+    "comments": "Stratum 1 NTP Server powered by USB/Serial GPS"
   }
 }

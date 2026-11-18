@@ -26,29 +26,49 @@ To use this software, you need a compatible USB NMEA GPS receiver.
 ## Features
 
 - **Automatic GPS Receiver Detection**: Automatically scans all serial/USB ports at common baud rates (115200 and 9600 bps) to locate your GPS receiver and start parsing NMEA sentences.
-- **Satellite Constellation Visualization**: Tracks and displays active satellites, elevation, azimuth, and Signal-to-Noise Ratio (SNR) for:
+- **Satellite Constellation Visualization (3D Globe / 2D Skyplot)**: Tracks and displays active satellites, elevation, azimuth, and Signal-to-Noise Ratio (SNR) on an interactive 3D globe (with automatic 2D skyplot fallback on environments without WebGL):
   - **GPS** (USA)
   - **GLONASS** (Russia)
   - **Galileo** (EU)
   - **BeiDou** (China)
   - **QZSS / Michibiki** (Japan)
   - **SBAS / MSAS** (Augmentation systems)
+- **Stationary Speed Detection**: Filters minor GPS position jitter to detect stationary state, displaying a `Stationary` badge and stabilized speed readout.
 - **Built-in Stratum 1 NTP Server**:
   - Serves high-precision time synced with GPS satellite clocks.
   - Defaults to the standard NTP port `123` (or customizable ports).
   - Flags Stratum 1 with the `"GPS "` reference identifier when active.
   - Automatically falls back to system time if the GPS receiver loses its 3D fix.
-- **Modern User Interface**: A responsive dashboard with real-time updates and multi-language support (English and Japanese).
+- **Calendar & Moon View** *(New in v0.2.0)*:
+  - Uses live GPS time and coordinates (or any custom date/time and location) to display astronomical and calendar details.
+  - **World Calendars**: Gregorian, Julian, Julian Day (JD), Modified Julian Day (MJD), ISO Week Date, Hebrew, Islamic (Hijri), Persian, Bahá'í, Indian National (Saka), French Republican, and Mayan calendars.
+  - **Japanese Koyomi (Traditional Almanac)**: Wareki (Era), Koki, Kyureki (Lunisolar), Rokuyo, 24 Solar Terms, Zassetsu, Sexagenary Cycle (Eto), Natchin, Nine Star Ki, Junichoku, 28 Mansions, and Senjitsu.
+  - **Lunar & Solar Sky Dome**: Displays moon age, illumination, geocentric distance, angular size, phase graphic, upcoming moon phases, rise/transit/set times, and an interactive sky dome chart for the Sun and Moon.
+- **Long-Term Position Stability & Drift Monitor** *(New in v0.2.0)*:
+  - Records GPS fix history and averages vector components (ΔN, ΔE, ΔAlt) per time bucket so random noise cancels out over long-term operation.
+  - Supports multiple time scales: **1 Hour (Sec)**, **24 Hours (Min)**, **30 Days (Hour)**, and **All Time (Day)**, along with a 2D scatter plot (East vs North) and annual linear trend estimation.
+  - Includes reference origin reset and **CSV export** for external analysis.
+- **Modern User Interface**: A responsive dashboard with dark/light themes, real-time updates, and multi-language support (English and Japanese).
+
+---
+
+## Screenshots
+
+### Calendar & Moon View
+![Calendar & Moon View](images/screenshot_calendar.png)
+
+### Long-Term Position Stability & Drift Monitor
+![Position Drift Monitor](images/screenshot_drift.png)
 
 ---
 
 ## Installation
 
-You can download pre-built binaries from the GitHub Releases page.
+You can download pre-built binaries from the [GitHub Releases](https://github.com/twsnmp/twgps/releases) page.
 
 - **Windows**: Download the `.zip` archive, extract it, and run `twgps.exe`.
 - **Linux**: Download the `.tar.gz` archive, extract it, and run the binary. See [Linux Setup](#linux-setup) below for important permission and graphics settings.
-- **macOS**: Download the `.app` or disk image and copy it to your Applications folder.
+- **macOS**: Download the `.pkg` installer (or `.app` bundle) and install `twgps` into your `/Applications` folder.
 
 ---
 
@@ -60,8 +80,11 @@ You can download pre-built binaries from the GitHub Releases page.
 4. **Acquire Fix**: Wait for the GPS receiver to obtain a 3D fix. The dashboard will display your latitude, longitude, altitude, and current UTC time.
 5. **Start the NTP Server**:
    - Enter the desired port (default is `123`).
-   - Click the **Start NTP** button.
+   - Click the **Start Time Server** button.
    - *Note*: Using port `123` on Linux or macOS requires elevated capabilities or root privileges for binding. See [Linux Setup](#linux-setup) below.
+6. **Explore Additional Views**:
+   - **Calendar & Moon**: Switch to the Calendar & Moon tab in the top navigation bar to view world calendars, Japanese Koyomi, moon phase details, and the solar/lunar sky dome.
+   - **Position Drift**: Switch to the Position Drift tab to monitor long-term position displacement relative to a reference origin, inspect 2D distribution, or export history to CSV.
 
 ---
 
